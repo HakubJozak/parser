@@ -462,19 +462,30 @@ class Parser::Lexer
     'while'  => :kWHILE_MOD,   'until'    => :kUNTIL_MOD,
     'rescue' => :kRESCUE_MOD,  'defined?' => :kDEFINED,
     'BEGIN'  => :klBEGIN,      'END'      => :klEND,
+
+    'pokud'     => :kIF_MOD,
+    'kdyz'      => :kIF_MOD,
   }
 
   KEYWORDS_BEGIN = {
     'if'     => :kIF,          'unless'   => :kUNLESS,
     'while'  => :kWHILE,       'until'    => :kUNTIL,
     'rescue' => :kRESCUE,      'defined?' => :kDEFINED,
+
+    'pokud'     => :kIF,
+    'kdyz'      => :kIF,    
   }
 
   %w(class module def undef begin end then elsif else ensure case when
      for break next redo retry in do return yield super self nil true
-     false and or not alias __FILE__ __LINE__ __ENCODING__).each do |keyword|
+     false and or not alias __FILE__ __LINE__ __ENCODING__
+     ).each do |keyword|
     KEYWORDS_BEGIN[keyword] = KEYWORDS[keyword] = :"k#{keyword.upcase}"
   end
+
+  KEYWORDS_BEGIN['konec']  = KEYWORDS['konec' ] = :"kEND"
+  KEYWORDS_BEGIN['jinak']  = KEYWORDS['jinak' ] = :"kELSE"
+  KEYWORDS_BEGIN['prikaz'] = KEYWORDS['prikaz'] = :"kDEF"  
 
   %%{
   # %
@@ -560,7 +571,7 @@ class Parser::Lexer
                         '::' | '?'  | ':'  | '.'  | '..' | '...' ;
 
   # A list of keywords which have different meaning at the beginning of expression.
-  keyword_modifier    = 'if'     | 'unless' | 'while'  | 'until' | 'rescue' ;
+  keyword_modifier    = 'if'     | 'unless' | 'while'  | 'until' | 'rescue' | 'pokud';
 
   # A list of keywords which accept an argument-like expression, i.e. have the
   # same post-processing as method calls or commands. Example: `yield 1`,
@@ -573,7 +584,7 @@ class Parser::Lexer
   # A list of keywords which accept an expression after them.
   keyword_with_value  = 'else'   | 'case'   | 'ensure' | 'module' | 'elsif' | 'then'  |
                         'for'    | 'in'     | 'do'     | 'when'   | 'begin' | 'class' |
-                        'and'    | 'or'     ;
+                        'and'    | 'or'     | 'jinak';
 
   # A list of keywords which accept a value, and treat the keywords from
   # `keyword_modifier` list as modifiers.
@@ -582,7 +593,7 @@ class Parser::Lexer
   # A list of keywords which do not accept an expression after them.
   keyword_with_end    = 'end'    | 'self'   | 'true'   | 'false'  | 'retry'    |
                         'redo'   | 'nil'    | 'BEGIN'  | 'END'    | '__FILE__' |
-                        '__LINE__' | '__ENCODING__';
+                        '__LINE__' | '__ENCODING__' | 'konec';
 
   # All keywords.
   keyword             = keyword_with_value | keyword_with_mid |
@@ -1980,11 +1991,13 @@ class Parser::Lexer
 
       # elsif b:c: elsif b(:c)
       keyword_with_value
-      => { emit_table(KEYWORDS)
+      => { 
+           emit_table(KEYWORDS)
            fnext expr_value; fbreak; };
 
       keyword_with_mid
-      => { emit_table(KEYWORDS)
+      => {
+           emit_table(KEYWORDS)
            fnext expr_mid; fbreak; };
 
       keyword_with_arg
