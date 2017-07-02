@@ -579,7 +579,7 @@ class Parser::Lexer
   keyword_with_arg    = 'yield'  | 'super'  | 'not'    | 'defined?' ;
 
   # A list of keywords which accept a literal function name as an argument.
-  keyword_with_fname  = 'def'    | 'undef'  | 'alias'  ;
+  keyword_with_fname  = 'def'    | 'undef'  | 'alias'  | 'prikaz';
 
   # A list of keywords which accept an expression after them.
   keyword_with_value  = 'else'   | 'case'   | 'ensure' | 'module' | 'elsif' | 'then'  |
